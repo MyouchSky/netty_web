@@ -1,6 +1,7 @@
 package com.inetty.web.handler;
 
 import com.inetty.web.common.WSConstants;
+import com.inetty.web.common.enums.ResponseEnum;
 import com.inetty.web.common.utils.HttpBusinessResponseUtil;
 import com.inetty.web.log.NelLog;
 import com.inetty.web.manager.NelResourceManager;
@@ -11,27 +12,22 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 
 @Slf4j
-public class DefaultAdsRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class DefaultNelRequestHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static NelProcessorFactory factory = new NelProcessorFactory();
     private NelResourceManager nelResourceManager;
 
-    public DefaultAdsRequestHandler() {
-    }
-
-    public DefaultAdsRequestHandler(NelResourceManager nelResourceManager) {
+    public DefaultNelRequestHandler(NelResourceManager nelResourceManager) {
         this.nelResourceManager = nelResourceManager;
     }
 
-    public void badResponse(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        HttpResponseStatus status = HttpResponseStatus.BAD_REQUEST;
-        FullHttpResponse res = HttpBusinessResponseUtil.makeResponse(request, "bad request", status);
+    public void returnReponse(ChannelHandlerContext ctx, FullHttpRequest request, ResponseEnum responseEnum) throws Exception {
+        FullHttpResponse res = HttpBusinessResponseUtil.makeResponse(request, responseEnum.getDesc(), responseEnum.getStatus());
         ctx.writeAndFlush(res).addListener(ChannelFutureListener.CLOSE);
     }
 
@@ -40,8 +36,8 @@ public class DefaultAdsRequestHandler extends SimpleChannelInboundHandler<FullHt
         try {
             String requestPath = null;
             Channel channel = ctx.channel();
-            String msgId = (String) channel.attr(WSConstants.MSGID).get();
-//            long beginTime = ((Long) channel.attr(WSConstants.BEGINTIME).get()).longValue();
+            String msgId = channel.attr(WSConstants.MSGID).get();
+            long beginTime = channel.attr(WSConstants.BEGINTIME).get();
             long processBegin = 0;
             long processEnd = 0;
             long processCost = 0;
@@ -74,34 +70,26 @@ public class DefaultAdsRequestHandler extends SimpleChannelInboundHandler<FullHt
                     handler.sendResponse(ctx, msg);
                 } else {
                     log.info("[Nel-Common] There is no precoess with request > " + requestPath + " , msgId = " + msgId);
-                    badResponse(ctx, msg);
+                    returnReponse(ctx, msg, ResponseEnum.BAD_REQUEST);
                 }
-//                if (processEnd > 0) {
-//                    cost = processEnd - beginTime;
-//                } else {
-//                    cost = System.currentTimeMillis() - beginTime;
-//                }
+                if (processEnd > 0) {
+                    cost = processEnd - beginTime;
+                } else {
+                    cost = System.currentTimeMillis() - beginTime;
+                }
                 if (cost > 500L) {
                     log.info("[Nel-Common] Process request cost too long:" + requestPath + " , totalCpst = " + cost + " ,processCost = " + processCost + " , msgId = " + msgId);
                 }
+            }else{
+                returnReponse(ctx, msg, ResponseEnum.NOT_FOUND);
             }
         } catch (Exception e) {
-            try {
-                badResponse(ctx, msg);
-            } catch (Exception ex) {
-                ctx.channel().close();
-            }
+            returnReponse(ctx, msg, ResponseEnum.BAD_REQUEST);
             log.error("[Nel-Common] Exception =》",e);
         } finally {
             //业务流程完成以后，payload可以被减一
             PayloadManager.decreasePayload();
         }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelInactive ...");
-        ctx.close();
     }
 }
 

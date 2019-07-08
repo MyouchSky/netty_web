@@ -1,6 +1,6 @@
 package com.inetty.web.start;
 
-import com.inetty.web.handler.DefaultAdsRequestHandler;
+import com.inetty.web.handler.DefaultNelRequestHandler;
 import com.inetty.web.handler.RelaseRequestHandler;
 import com.inetty.web.manager.NelResourceManager;
 import io.netty.channel.ChannelInitializer;
@@ -56,7 +56,7 @@ public class PipelineInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast("aggregator",new HttpObjectAggregator(5*1024*1024));
         pipeline.addLast("controller",relaseRequestHandler);
         //业务处理
-        pipeline.addLast(eventExecutorGroup,new DefaultAdsRequestHandler(nelResourceManager));
+        pipeline.addLast(eventExecutorGroup,new DefaultNelRequestHandler(nelResourceManager));
 
     }
 }

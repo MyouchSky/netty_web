@@ -1,9 +1,5 @@
 package com.inetty.demo;
 
-import com.inetty.web.handler.DefaultAdsRequestHandler;
-import com.inetty.web.handler.RelaseRequestHandler;
-import com.inetty.web.manager.NelResourceManager;
-import com.inetty.web.start.PipelineInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -15,7 +11,6 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.EventExecutorGroup;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.*;
 
