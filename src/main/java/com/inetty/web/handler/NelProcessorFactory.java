@@ -42,11 +42,11 @@ public class NelProcessorFactory {
                         }
                     }
                 } else {
-                    log.info("[create controller error!] url = " + kry);
+                    log.info("create controller error! url = " + kry);
                 }
             }
         } catch (Exception e) {
-            log.error("[create controller error!]" + url, e);
+            log.error("create controller error!" + url, e);
         }
         return processor;
     }

@@ -34,16 +34,12 @@ public class DefaultNelRequestHandler extends SimpleChannelInboundHandler<FullHt
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest msg) throws Exception {
         try {
-            String requestPath = null;
             Channel channel = ctx.channel();
             String msgId = channel.attr(WSConstants.MSGID).get();
             long beginTime = channel.attr(WSConstants.BEGINTIME).get();
-            long processBegin = 0;
-            long processEnd = 0;
-            long processCost = 0;
-            long cost = 0;
+            CostTime ctime = new CostTime(beginTime);
             URI uri = new URI(msg.getUri());
-            requestPath = uri.getPath();
+            String requestPath = uri.getPath();
             NelBaseController handler = factory.create(requestPath, msg.getMethod());
             if (handler != null) {
                 String clientIP = msg.headers().get("X-Forwarded-For");
@@ -52,43 +48,61 @@ public class DefaultNelRequestHandler extends SimpleChannelInboundHandler<FullHt
                     if (insocket != null) {
                         clientIP = insocket.getAddress().getHostAddress();
                     }
-                    NelLog logBean = new NelLog();
-                    logBean.setAction(requestPath);
-                    logBean.setMid(msgId);
-                    logBean.setIp(clientIP);
+                    NelLog logBean = new NelLog(requestPath, msgId, clientIP);
                     ctx.channel().attr(WSConstants.LOG).set(logBean);
                     //初始化
                     handler.initLog(logBean);
                     handler.initResourceManager(nelResourceManager);
-                    processBegin = System.currentTimeMillis();
                     //处理请求
                     handler.handleHttpMsg(ctx, msg);
-                    processEnd = System.currentTimeMillis();
-                    processCost = processEnd - processBegin;
-                    logBean.setCost(processCost);
+                    logBean.setCost(ctime.cost(System.currentTimeMillis()));
                     //返回请求信息
                     handler.sendResponse(ctx, msg);
                 } else {
                     log.info("[Nel-Common] There is no precoess with request > " + requestPath + " , msgId = " + msgId);
                     returnReponse(ctx, msg, ResponseEnum.BAD_REQUEST);
                 }
-                if (processEnd > 0) {
-                    cost = processEnd - beginTime;
-                } else {
-                    cost = System.currentTimeMillis() - beginTime;
+
+                if (ctime.getProcessEnd() == 0) {
+                    ctime.cost(System.currentTimeMillis());
                 }
-                if (cost > 500L) {
-                    log.info("[Nel-Common] Process request cost too long:" + requestPath + " , totalCpst = " + cost + " ,processCost = " + processCost + " , msgId = " + msgId);
+
+                if (ctime.getCost() > 500L) {
+                    log.info("[Nel-Common] Process request cost too long:" + requestPath + " , totalCost = " + ctime.getCost()  + " , msgId = " + msgId);
                 }
-            }else{
+            } else {
                 returnReponse(ctx, msg, ResponseEnum.NOT_FOUND);
             }
         } catch (Exception e) {
             returnReponse(ctx, msg, ResponseEnum.BAD_REQUEST);
-            log.error("[Nel-Common] Exception =》",e);
+            log.error("[Nel-Common] Exception =》", e);
         } finally {
             //业务流程完成以后，payload可以被减一
             PayloadManager.decreasePayload();
+        }
+    }
+
+    public class CostTime {
+        long processBegin = 0;
+        long processEnd = 0;
+        long processCost = 0;
+
+        public CostTime(Long processBegin) {
+            this.processBegin = processBegin;
+        }
+
+        public long cost(Long processEnd) {
+            this.processEnd = processEnd;
+            this.processCost = processEnd - processBegin;
+            return processCost;
+        }
+
+        public long getProcessEnd() {
+            return processEnd;
+        }
+
+        public long getCost() {
+            return this.processCost;
         }
     }
 }

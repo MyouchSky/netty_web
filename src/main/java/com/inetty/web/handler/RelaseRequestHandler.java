@@ -3,6 +3,7 @@ package com.inetty.web.handler;
 import com.inetty.web.common.WSConstants;
 import com.inetty.web.common.utils.HttpBusinessResponseUtil;
 import com.inetty.web.manager.NelResourceManager;
+import com.inetty.web.payload.AtomicPayLoad;
 import com.inetty.web.payload.PayloadManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -32,6 +33,7 @@ public class RelaseRequestHandler extends SimpleChannelInboundHandler<Object> {
         if (nelResource != null) {
             if (nelResource.getRefuseConns() != null) {
                 this.REFUSE_CONNECTIONS = nelResource.getRefuseConns().intValue();
+                PayloadManager.init(new AtomicPayLoad(this.REFUSE_CONNECTIONS));
             }
             this.serverName = nelResource.getServerName();
             if (Objects.nonNull(nelResource.getServerRegion())) {

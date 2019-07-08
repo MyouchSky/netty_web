@@ -1,11 +1,21 @@
 package com.inetty.web.payload;
 
-import java.util.concurrent.atomic.AtomicInteger;
+public class PayloadManager {
+    private static BasePayLoad payLoad;
 
-public class PayloadManager{
-    protected static AtomicInteger payload = new  AtomicInteger(0);
+    public static void init(BasePayLoad payLoad) {
+        payLoad = payLoad;
+    }
 
-    public static int increasePayload(){return payload.incrementAndGet();}
-    public static int decreasePayload(){return payload.decrementAndGet();}
-    public static int getPayload(){return payload.get();}
+    public static boolean increasePayload() {
+        return payLoad.incr();
+    }
+
+    public static void decreasePayload() {
+        payLoad.decr();
+    }
+
+    public static int getPayload() {
+        return payLoad.get();
+    }
 }

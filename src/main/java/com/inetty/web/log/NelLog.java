@@ -10,4 +10,10 @@ public class NelLog {
     public Long cost;
     public String info;
 
+    public NelLog(){};
+    public NelLog(String action,String mid,String ip){
+        this.action = action;
+        this.mid = mid;
+        this.ip = ip;
+    }
 }
